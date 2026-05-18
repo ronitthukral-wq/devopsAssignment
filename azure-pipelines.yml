@@ -1,0 +1,72 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # This matches the name of the verified service connection you created earlier!
+  serviceConnectionName: 'azure-resource-manager-connection'
+  backendRG: 'rg-terraform-management'
+  backendStorage: 'YOUR_ACTUAL_STORAGE_ACCOUNT_NAME' # 👈 Replace with your actual Azure storage account name
+  backendContainer: 'tfstate'                        # 👈 Replace with your container name
+  backendKey: 'terraform.tfstate'
+
+stages:
+- stage: Terraform_Plan
+  displayName: 'Preview Cloud Changes'
+  jobs:
+  - job: Plan
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform Runner'
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Initialize Backend'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: '$(serviceConnectionName)'
+        backendAzureRmResourceGroupName: '$(backendRG)'
+        backendAzureRmStorageAccountName: '$(backendStorage)'
+        backendAzureRmContainerName: '$(backendContainer)'
+        backendAzureRmKey: '$(backendKey)'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Create Deployment Blueprint'
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        environmentServiceNameAzureRM: '$(serviceConnectionName)'
+
+- stage: Terraform_Apply
+  displayName: 'Deploy Live to Azure'
+  dependsOn: Terraform_Plan
+  condition: succeeded()
+  jobs:
+  - job: Apply
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform Runner'
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Connect to Backend'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: '$(serviceConnectionName)'
+        backendAzureRmResourceGroupName: '$(backendRG)'
+        backendAzureRmStorageAccountName: '$(backendStorage)'
+        backendAzureRmContainerName: '$(backendContainer)'
+        backendAzureRmKey: '$(backendKey)'
+
+    - task: TerraformTaskV4@4
+      displayName: 'Execute Live Changes'
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        environmentServiceNameAzureRM: '$(serviceConnectionName)'
