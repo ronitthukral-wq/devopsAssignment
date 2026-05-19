@@ -5,7 +5,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  serviceConnectionName: 'azure-resource-manager-connection'
+  serviceConnectionName: 'firstserviceconnection'
   backendRG: 'rg-firstresource'
   backendStorage: 'storagergfirst13'
   backendContainer: 'tfstate'
