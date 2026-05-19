@@ -5,11 +5,10 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  # This matches the name of the verified service connection you created earlier!
   serviceConnectionName: 'azure-resource-manager-connection'
-  backendRG: 'rg-terraform-management'
-  backendStorage: 'YOUR_ACTUAL_STORAGE_ACCOUNT_NAME' # 👈 Replace with your actual Azure storage account name
-  backendContainer: 'tfstate'                        # 👈 Replace with your container name
+  backendRG: 'rg-firstresource'
+  backendStorage: 'storagergfirst13'
+  backendContainer: 'tfstate'
   backendKey: 'terraform.tfstate'
 
 stages:
@@ -18,7 +17,7 @@ stages:
   jobs:
   - job: Plan
     steps:
-    - task: TerraformInstaller@1
+    - task: TerraformInstaller@0
       displayName: 'Install Terraform Runner'
       inputs:
         terraformVersion: 'latest'
@@ -28,6 +27,7 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
         backendServiceArm: '$(serviceConnectionName)'
         backendAzureRmResourceGroupName: '$(backendRG)'
         backendAzureRmStorageAccountName: '$(backendStorage)'
@@ -39,6 +39,7 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
         environmentServiceNameAzureRM: '$(serviceConnectionName)'
 
 - stage: Terraform_Apply
@@ -48,7 +49,7 @@ stages:
   jobs:
   - job: Apply
     steps:
-    - task: TerraformInstaller@1
+    - task: TerraformInstaller@0
       displayName: 'Install Terraform Runner'
       inputs:
         terraformVersion: 'latest'
@@ -58,6 +59,7 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
         backendServiceArm: '$(serviceConnectionName)'
         backendAzureRmResourceGroupName: '$(backendRG)'
         backendAzureRmStorageAccountName: '$(backendStorage)'
@@ -69,4 +71,6 @@ stages:
       inputs:
         provider: 'azurerm'
         command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)'
         environmentServiceNameAzureRM: '$(serviceConnectionName)'
+        commandOptions: '-auto-approve'
