@@ -1,0 +1,92 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest' # Standard Microsoft-hosted agent
+
+variables:
+  svcConnection: 'azure-practice-connection' # Defined in your DevOps settings
+  backendRG: 'rg-tf-backend-practice'       # Your manual backend RG name
+  backendStorage: 'yourmanualstorageaccount' # Your manual storage name
+  appName: 'app-findbetter-practice'
+
+stages:
+
+# STAGE 1: Infrastructure via Terraform
+- stage: TF_Pipeline
+  displayName: '1. TF Pipeline Stage'
+  jobs:
+  - job: Deploy_Infra
+    steps:
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformCLI@1
+      displayName: 'TF Initialize Backend'
+      inputs:
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        backendType: 'azurerm'
+        backendServiceArm: '$(svcConnection)'
+        backendAzureRmResourceGroupName: '$(backendRG)'
+        backendAzureRmStorageAccountName: '$(backendStorage)'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'unified.terraform.tfstate'
+
+    - task: TerraformCLI@1
+      displayName: 'TF Apply Deployment'
+      inputs:
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        environmentServiceName: '$(svcConnection)'
+
+# STAGE 2: Build Application Code
+- stage: Build_Pipeline
+  displayName: '2. Build Pipeline Stage'
+  dependsOn: TF_Pipeline
+  jobs:
+  - job: Compile_Code
+    steps:
+    - script: |
+        mkdir $(System.DefaultWorkingDirectory)/out
+        cp $(System.DefaultWorkingDirectory)/src/index.html $(System.DefaultWorkingDirectory)/out/
+      displayName: 'Staging Code Artifacts'
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/out'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
+        ArtifactName: 'drop'
+
+# STAGE 3: Release Application onto Infrastructure
+- stage: Release_Pipeline
+  displayName: '3. Release Pipeline Stage'
+  dependsOn: Build_Pipeline
+  jobs:
+  - deployment: Deploy_App
+    environment: 'Practice'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@1
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'drop'
+              downloadPath: '$(System.ArtifactsDirectory)'
+
+          - task: AzureRmWebAppDeployment@4
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: '$(svcConnection)'
+              appType: 'webAppLinux'
+              WebAppName: '$(appName)'
+              Package: '$(System.ArtifactsDirectory)/drop/app.zip'

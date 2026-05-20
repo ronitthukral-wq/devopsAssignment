@@ -1,0 +1,23 @@
+trigger: none
+resources:
+  pipelines:
+  - pipeline: appBuildSource
+    source: 'App-Build-Pipeline-Name' # Name assigned in DevOps Portal
+    trigger: true
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: DownloadPipelineArtifact@2
+  inputs:
+    source: 'current'
+    artifact: 'drop'
+    path: '$(System.ArtifactsDirectory)'
+- task: AzureRmWebAppDeployment@4
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'azure-practice-connection'
+    appType: 'webAppLinux'
+    WebAppName: 'app-findbetter-practice'
+    Package: '$(System.ArtifactsDirectory)/app.zip'
