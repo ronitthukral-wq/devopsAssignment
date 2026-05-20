@@ -15,14 +15,14 @@ resource "azurerm_service_plan" "asp" {
 
 # 3. Modern Linux Web Application 
 resource "azurerm_linux_web_app" "app" {
-  name                = "app-${var.project_name}" # Must be globally unique in Azure
+  name                = "app-${var.project_name}" 
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   service_plan_id     = azurerm_service_plan.asp.id
   https_only          = true
 
   site_config {
-    always_on = false # Required for F1/Free tier plans
+    always_on = false 
     application_stack {
       dotnet_version = "6.0" 
     }

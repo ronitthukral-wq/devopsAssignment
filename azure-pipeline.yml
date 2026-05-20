@@ -2,13 +2,13 @@ trigger:
 - main
 
 pool:
-  vmImage: 'ubuntu-latest' # Standard Microsoft-hosted agent
+  vmImage: 'ubuntu-latest'
 
 variables:
-  svcConnection: 'azure-practice-connection' # Defined in your DevOps settings
-  backendRG: 'rg-tf-backend-practice'       # Your manual backend RG name
-  backendStorage: 'yourmanualstorageaccount' # Your manual storage name
-  appName: 'app-findbetter-practice'
+  svcConnection: 'firstserviceconnection'
+  backendRG: 'rg-firstresource'
+  backendStorage: 'storagergfirst13'
+  appName: 'app-devops-assignment'
 
 stages:
 
@@ -19,27 +19,28 @@ stages:
   - job: Deploy_Infra
     steps:
     - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
       inputs:
         terraformVersion: 'latest'
 
-    - task: TerraformCLI@1
-      displayName: 'TF Initialize Backend'
+    - task: AzureCLI@2
+      displayName: 'TF Init + Plan + Apply'
       inputs:
-        command: 'init'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-        backendType: 'azurerm'
-        backendServiceArm: '$(svcConnection)'
-        backendAzureRmResourceGroupName: '$(backendRG)'
-        backendAzureRmStorageAccountName: '$(backendStorage)'
-        backendAzureRmContainerName: 'tfstate'
-        backendAzureRmKey: 'unified.terraform.tfstate'
+        azureSubscription: '$(svcConnection)'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          cd $(System.DefaultWorkingDirectory)/terraform
 
-    - task: TerraformCLI@1
-      displayName: 'TF Apply Deployment'
-      inputs:
-        command: 'apply'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-        environmentServiceName: '$(svcConnection)'
+          terraform init \
+            -backend-config="resource_group_name=$(backendRG)" \
+            -backend-config="storage_account_name=$(backendStorage)" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=unified.terraform.tfstate"
+
+          terraform plan -out=tfplan
+
+          terraform apply -auto-approve tfplan
 
 # STAGE 2: Build Application Code
 - stage: Build_Pipeline
@@ -49,7 +50,7 @@ stages:
   - job: Compile_Code
     steps:
     - script: |
-        mkdir $(System.DefaultWorkingDirectory)/out
+        mkdir -p $(System.DefaultWorkingDirectory)/out
         cp $(System.DefaultWorkingDirectory)/src/index.html $(System.DefaultWorkingDirectory)/out/
       displayName: 'Staging Code Artifacts'
 
