@@ -6,6 +6,6 @@ variable "location" {
 
 variable "project_name" {
   type        = string
-  default     = "findbetter-practice"
+  default     = "devops-assignment"
   description = "Prefix identifier for app uniqueness"
 }
