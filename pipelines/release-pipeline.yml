@@ -3,7 +3,7 @@ trigger: none
 resources:
   pipelines:
   - pipeline: buildSource
-    source: 'build-pipeline'        # exact name in Azure DevOps portal
+    source: 'ronitthukral-wq.devopsAssignment'        # exact name in Azure DevOps portal
     trigger: true
 
 pool:
