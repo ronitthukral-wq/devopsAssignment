@@ -1,8 +1,9 @@
 trigger: none
+
 resources:
   pipelines:
   - pipeline: appBuildSource
-    source: 'App-Build-Pipeline-Name' # Name assigned in DevOps Portal
+    source: 'App-Build-Pipeline-Name'  # must match exact name in Azure DevOps portal
     trigger: true
 
 pool:
@@ -11,13 +12,15 @@ pool:
 steps:
 - task: DownloadPipelineArtifact@2
   inputs:
-    source: 'current'
+    source: 'specific'
+    pipeline: appBuildSource
     artifact: 'drop'
     path: '$(System.ArtifactsDirectory)'
-- task: AzureRmWebAppDeployment@4
+
+- task: AzureFunctionApp@2
   inputs:
-    ConnectionType: 'AzureRM'
-    azureSubscription: 'azure-practice-connection'
-    appType: 'webAppLinux'
-    WebAppName: 'app-findbetter-practice'
-    Package: '$(System.ArtifactsDirectory)/app.zip'
+    connectedServiceNameARM: 'azure-practice-connection'
+    appType: 'functionAppLinux'
+    appName: 'app-devops-assignment'
+    package: '$(System.ArtifactsDirectory)/app.zip'
+    runtimeStack: 'NODE|18'

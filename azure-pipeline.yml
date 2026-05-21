@@ -29,8 +29,14 @@ stages:
         azureSubscription: '$(svcConnection)'
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
+        addSpnToEnvironment: true
         inlineScript: |
           cd $(System.DefaultWorkingDirectory)/terraform
+
+          export ARM_CLIENT_ID=$servicePrincipalId
+          export ARM_CLIENT_SECRET=$servicePrincipalKey
+          export ARM_TENANT_ID=$tenantId
+          export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 
           terraform init \
             -backend-config="resource_group_name=$(backendRG)" \
@@ -55,6 +61,7 @@ stages:
       displayName: 'Staging Code Artifacts'
 
     - task: ArchiveFiles@2
+      displayName: 'Zip Artifacts'
       inputs:
         rootFolderOrFile: '$(System.DefaultWorkingDirectory)/out'
         includeRootFolder: false
@@ -62,9 +69,11 @@ stages:
         archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
 
     - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
         ArtifactName: 'drop'
+        publishLocation: 'Container'
 
 # STAGE 3: Release Application onto Infrastructure
 - stage: Release_Pipeline
@@ -78,16 +87,18 @@ stages:
         deploy:
           steps:
           - task: DownloadBuildArtifacts@1
+            displayName: 'Download Artifacts'
             inputs:
               buildType: 'current'
               downloadType: 'single'
               artifactName: 'drop'
               downloadPath: '$(System.ArtifactsDirectory)'
 
-          - task: AzureRmWebAppDeployment@4
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy Function App'
             inputs:
-              ConnectionType: 'AzureRM'
-              azureSubscription: '$(svcConnection)'
-              appType: 'webAppLinux'
-              WebAppName: '$(appName)'
-              Package: '$(System.ArtifactsDirectory)/drop/app.zip'
+              connectedServiceNameARM: '$(svcConnection)'
+              appType: 'functionAppLinux'
+              appName: '$(appName)'
+              package: '$(System.ArtifactsDirectory)/drop/app.zip'
+              runtimeStack: 'NODE|18'

@@ -1,16 +1,22 @@
-trigger: - main
+trigger:
+- main
+
 pool:
   vmImage: 'ubuntu-latest'
+
 steps:
 - script: |
-    mkdir $(System.DefaultWorkingDirectory)/out
-    echo "<h1>Practice Web App running</h1>" > $(System.DefaultWorkingDirectory)/out/index.html
+    mkdir -p $(System.DefaultWorkingDirectory)/out
+    cp $(System.DefaultWorkingDirectory)/src/index.html $(System.DefaultWorkingDirectory)/out/index.html
+  displayName: 'Copy index.html to out folder'
+
 - task: ArchiveFiles@2
   inputs:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/out'
     includeRootFolder: false
     archiveType: 'zip'
     archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
