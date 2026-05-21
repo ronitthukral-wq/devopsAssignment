@@ -3,26 +3,32 @@ trigger: none
 resources:
   pipelines:
   - pipeline: buildSource
-    source: 'ronitthukral-wq.devopsAssignment'        # exact name in Azure DevOps portal
+    source: 'ronitthukral-wq.devopsAssignment'
     trigger: true
 
 pool:
   vmImage: 'ubuntu-latest'
 
+variables:
+  svcConnection: 'firstserviceconnection'
+  appName: 'app-devops-assignment-s1'
+
 steps:
 - task: DownloadPipelineArtifact@2
+  displayName: 'Download Artifacts'
   inputs:
-    source: 'specific'
-    pipeline: buildSource
+    buildType: 'specific'
+    project: '$(System.TeamProjectId)'
+    pipeline: '$(resources.pipeline.buildSource.pipelineID)'
+    runVersion: 'latest'
     artifact: 'drop'
     path: '$(System.ArtifactsDirectory)'
 
-- task: AzureRmWebAppDeployment@4
-  displayName: 'Deploy Web App'
+- task: AzureFunctionApp@2
+  displayName: 'Deploy Function App'
   inputs:
-    ConnectionType: 'AzureRM'
-    azureSubscription: 'firstserviceconnection'
-    appType: 'webAppLinux'
-    WebAppName: 'app-devops-assignment'
-    Package: '$(System.ArtifactsDirectory)/app.zip'
-    StartupCommand: 'npx serve -s /home/site/wwwroot -l 8080'
+    connectedServiceNameARM: '$(svcConnection)'
+    appType: 'functionAppLinux'
+    appName: '$(appName)'
+    package: '$(System.ArtifactsDirectory)/app.zip'
+    runtimeStack: 'NODE|18'
