@@ -1,6 +1,6 @@
 variable "location" {
   type        = string
-  default     = "West US"
+  default     = "Central India"
   description = "Target deployment region"
 }
 

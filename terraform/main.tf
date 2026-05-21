@@ -10,7 +10,7 @@ resource "azurerm_service_plan" "asp" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   os_type             = "Linux"
-  sku_name            = "B1" # Practice-level free tier
+  sku_name            = "F1" # Practice-level free tier
 }
 
 # 3. Modern Linux Web Application 
