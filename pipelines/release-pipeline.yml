@@ -2,8 +2,8 @@ trigger: none
 
 resources:
   pipelines:
-  - pipeline: appBuildSource
-    source: 'App-Build-Pipeline-Name'  # must match exact name in Azure DevOps portal
+  - pipeline: buildSource
+    source: 'build-pipeline'        # exact name in Azure DevOps portal
     trigger: true
 
 pool:
@@ -13,14 +13,16 @@ steps:
 - task: DownloadPipelineArtifact@2
   inputs:
     source: 'specific'
-    pipeline: appBuildSource
+    pipeline: buildSource
     artifact: 'drop'
     path: '$(System.ArtifactsDirectory)'
 
-- task: AzureFunctionApp@2
+- task: AzureRmWebAppDeployment@4
+  displayName: 'Deploy Web App'
   inputs:
-    connectedServiceNameARM: 'azure-practice-connection'
-    appType: 'functionAppLinux'
-    appName: 'app-devops-assignment'
-    package: '$(System.ArtifactsDirectory)/app.zip'
-    runtimeStack: 'NODE|18'
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'firstserviceconnection'
+    appType: 'webAppLinux'
+    WebAppName: 'app-devops-assignment'
+    Package: '$(System.ArtifactsDirectory)/app.zip'
+    StartupCommand: 'npx serve -s /home/site/wwwroot -l 8080'

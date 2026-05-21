@@ -1,5 +1,4 @@
-trigger:
-- main
+trigger: none
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -7,8 +6,8 @@ pool:
 steps:
 - script: |
     mkdir -p $(System.DefaultWorkingDirectory)/out
-    cp $(System.DefaultWorkingDirectory)/src/index.html $(System.DefaultWorkingDirectory)/out/index.html
-  displayName: 'Copy index.html to out folder'
+    cp $(System.DefaultWorkingDirectory)/src/index.html $(System.DefaultWorkingDirectory)/out/
+  displayName: 'Stage Artifacts'
 
 - task: ArchiveFiles@2
   inputs:
@@ -21,3 +20,4 @@ steps:
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
     ArtifactName: 'drop'
+    publishLocation: 'Container'
