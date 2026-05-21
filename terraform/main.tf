@@ -1,12 +1,12 @@
 # 1. Resource Group
 resource "azurerm_resource_group" "rg" {
-  name     = "rg-${var.project_name}"
+  name     = "rg-${var.project_name}-${var.scenario}"
   location = var.location
 }
 
 # 2. Storage Account (required for Function App)
 resource "azurerm_storage_account" "sa" {
-  name                     = "safunc${replace(var.project_name, "-", "")}"
+  name                     = "safunc${replace(var.project_name, "-", "")}${var.scenario}"
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
@@ -15,7 +15,7 @@ resource "azurerm_storage_account" "sa" {
 
 # 3. App Service Plan - Y1 Consumption
 resource "azurerm_service_plan" "asp" {
-  name                = "asp-${var.project_name}"
+  name                = "asp-${var.project_name}-${var.scenario}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   os_type             = "Linux"
@@ -24,7 +24,7 @@ resource "azurerm_service_plan" "asp" {
 
 # 4. Linux Function App
 resource "azurerm_linux_function_app" "func" {
-  name                       = "app-${var.project_name}"
+  name                       = "app-${var.project_name}-${var.scenario}"
   resource_group_name        = azurerm_resource_group.rg.name
   location                   = azurerm_resource_group.rg.location
   service_plan_id            = azurerm_service_plan.asp.id
@@ -35,7 +35,7 @@ resource "azurerm_linux_function_app" "func" {
   site_config {
     always_on = false
     application_stack {
-      node_version = "18"
+      node_version = "18-lts"
     }
   }
 }
