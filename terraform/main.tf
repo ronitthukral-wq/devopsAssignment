@@ -35,7 +35,7 @@ resource "azurerm_linux_function_app" "func" {
   site_config {
     always_on = false
     application_stack {
-      node_version = "18-lts"
+      node_version = "18"
     }
   }
 }
