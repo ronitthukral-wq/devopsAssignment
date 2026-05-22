@@ -3,11 +3,8 @@ trigger: none
 resources:
   pipelines:
   - pipeline: buildSource
-    source: 'ronitthukral-wq.devopsAssignment'
-    trigger:
-      branches:
-        include:
-        - main
+    source: 'ronitthukral-wq.devopsAssignment'    # ← exact name of build pipeline in Azure DevOps
+    trigger: true
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -38,6 +35,11 @@ steps:
     package: '$(System.ArtifactsDirectory)/app.zip'
     runtimeStack: 'NODE|18'
 
+- task: TerraformInstaller@1
+  displayName: 'Install Terraform'
+  inputs:
+    terraformVersion: 'latest'
+
 - task: AzureCLI@2
   displayName: 'TF Destroy — Cleanup Infra'
   inputs:
@@ -59,4 +61,4 @@ steps:
         -backend-config="container_name=tfstate" \
         -backend-config="key=scenario1.terraform.tfstate"
 
-      terraform destroy -auto-approve -var="scenario=s1" 
+      terraform destroy -auto-approve -var="scenario=s1"

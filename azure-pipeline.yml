@@ -3,11 +3,8 @@ trigger:
     include:
     - main
   paths:
-    include:
-    - azure-pipelines.yml
-    - terraform/**
-    - src/**
-    - host.json
+    exclude:
+    - pipelines/**    # ← only exclude scenario 1&2 pipeline files
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -123,7 +120,7 @@ stages:
         terraformVersion: 'latest'
 
     - task: AzureCLI@2
-      displayName: 'TF Destroy — Cleanup Infra'
+      displayName: 'TF Destroy'
       inputs:
         azureSubscription: '$(svcConnection)'
         scriptType: 'bash'
