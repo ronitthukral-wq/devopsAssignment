@@ -14,7 +14,7 @@ variables:
   backendRG: 'rg-firstresource'
   backendStorage: 'storagergfirst13'
   appName: 'app-devops-assignment'
-
+ 
 steps:
 - task: DownloadPipelineArtifact@2
   displayName: 'Download Artifacts'
