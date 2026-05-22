@@ -1,5 +1,11 @@
 trigger:
-- main
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - terraform/**
+    - pipelines/tf-pipeline.yml
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -36,5 +42,5 @@ steps:
         -backend-config="container_name=tfstate" \
         -backend-config="key=scenario1.terraform.tfstate"
 
-      terraform plan -out=tfplan
+      terraform plan -out=tfplan -var="scenario=s1"
       terraform apply -auto-approve tfplan

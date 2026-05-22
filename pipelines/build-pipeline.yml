@@ -1,4 +1,12 @@
-trigger: none
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/**
+    - host.json
+    - pipelines/build-pipeline.yml
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -14,6 +22,7 @@ steps:
   displayName: 'Staging Code Artifacts'
 
 - task: ArchiveFiles@2
+  displayName: 'Zip Artifacts'
   inputs:
     rootFolderOrFile: '$(System.DefaultWorkingDirectory)/out'
     includeRootFolder: false
@@ -21,6 +30,7 @@ steps:
     archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
 
 - task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifacts'
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
     ArtifactName: 'drop'
