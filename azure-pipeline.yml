@@ -60,10 +60,11 @@ stages:
     - script: |
         mkdir -p $(System.DefaultWorkingDirectory)/out
         cp $(System.DefaultWorkingDirectory)/host.json $(System.DefaultWorkingDirectory)/out/
-        cp $(System.DefaultWorkingDirectory)/src/index.html $(System.DefaultWorkingDirectory)/out/
+        cp $(System.DefaultWorkingDirectory)/src/package.json $(System.DefaultWorkingDirectory)/out/
         mkdir -p $(System.DefaultWorkingDirectory)/out/HttpTrigger
         cp $(System.DefaultWorkingDirectory)/src/HttpTrigger/function.json $(System.DefaultWorkingDirectory)/out/HttpTrigger/
         cp $(System.DefaultWorkingDirectory)/src/HttpTrigger/index.js $(System.DefaultWorkingDirectory)/out/HttpTrigger/
+
       displayName: 'Staging Code Artifacts'
 
     - task: ArchiveFiles@2
