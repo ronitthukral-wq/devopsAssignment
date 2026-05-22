@@ -3,10 +3,10 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0" # Keeps syntax standard and stable
+      version = "~> 3.0"
     }
   }
-  backend "azurerm" {} # Intentionally blank: Configured at runtime by the DevOps agent
+  backend "azurerm" {}
 }
 
 provider "azurerm" {

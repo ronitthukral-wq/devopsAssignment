@@ -1,12 +1,10 @@
-trigger:
-  branches:
-    include:
-    - main
-  paths:
-    include:
-    - src/**
-    - host.json
-    - pipelines/build-pipeline.yml
+trigger: none
+
+resources:
+  pipelines:
+  - pipeline: tfSource
+    source: 'tf-pipeline-s1'    # ← exact name of tf-pipeline in portal
+    trigger: true
 
 pool:
   vmImage: 'ubuntu-latest'

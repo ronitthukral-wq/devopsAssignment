@@ -1,11 +1,10 @@
-trigger:
-  branches:
-    include:
-    - main
-  paths:
-    include:
-    - terraform/**
-    - pipelines/tf-pipeline.yml
+trigger: none
+
+resources:
+  pipelines:
+  - pipeline: scenario3Source
+    source: 'scenario3-pipeline'    # ← exact name of azure-pipelines in portal
+    trigger: true
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -42,5 +41,5 @@ steps:
         -backend-config="container_name=tfstate" \
         -backend-config="key=scenario1.terraform.tfstate"
 
-      terraform plan -out=tfplan -var="scenario=s1"
+      terraform plan -out=tfplan
       terraform apply -auto-approve tfplan
