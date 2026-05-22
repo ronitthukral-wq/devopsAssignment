@@ -3,7 +3,7 @@ trigger: none
 resources:
   pipelines:
   - pipeline: buildSource
-    source: 'build-pipeline'
+    source: 'build-pipeline-s1'
     trigger: true
 
 pool:
