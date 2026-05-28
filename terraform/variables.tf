@@ -1,11 +1,14 @@
 variable "location" {
   type        = string
   default     = "Central India"
-  description = "Target deployment region"
 }
 
 variable "project_name" {
   type        = string
-  default     = "devops-assignment"
-  description = "Prefix identifier for app uniqueness"
+  description = "Unique project workspace identifier"
+}
+
+variable "scenario_suffix" {
+  type        = string
+  description = "Appended to avoid cross-scenario resource blocks (e.g., s1, s2, s3)"
 }

@@ -1,0 +1,44 @@
+trigger: none
+
+resources:
+  pipelines:
+  - pipeline: buildSource
+    source: 'build-pipeline-s1' 
+    trigger: true
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  svcConnection: 'firstserviceconnection'
+  appName: 'app-devops-assignment-s1-dev' 
+ 
+# =================================================================
+# WE CHANGED 'STEPS:' TO A FORMAL DEPLOYMENT JOB TO ADD THE ENVIRONMENT
+# =================================================================
+jobs:
+- deployment: DeployToAzureDev
+  displayName: 'Deploy to Development Environment'
+  environment: 'development'  # ◄ RIGHT HERE! This links it to your Environment tab.
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download Artifacts'
+          inputs:
+            buildType: 'specific'
+            project: '$(System.TeamProjectId)'
+            pipeline: '$(resources.pipeline.buildSource.pipelineID)'
+            runVersion: 'latest'
+            artifact: 'drop'
+            path: '$(System.ArtifactsDirectory)'
+
+        - task: AzureFunctionApp@2
+          displayName: 'Deploy Function App'
+          inputs:
+            connectedServiceNameARM: '$(svcConnection)'
+            appType: 'functionAppLinux'
+            appName: '$(appName)'
+            package: '$(System.ArtifactsDirectory)/app.zip'
+            runtimeStack: 'NODE|18'

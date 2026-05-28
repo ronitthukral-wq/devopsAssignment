@@ -1,0 +1,31 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  svcConnection: 'firstserviceconnection'
+
+steps:
+- task: TerraformInstaller@1
+  displayName: 'Install Terraform'
+  inputs:
+    terraformVersion: 'latest'
+
+- task: TerraformTaskV4@4
+  displayName: 'TF Initialize'
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+    backendServiceArm: '$(svcConnection)'
+    backendAzureRmKey: 'scenario1.terraform.tfstate'
+
+- task: TerraformTaskV4@4
+  displayName: 'TF Apply'
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+    environmentServiceNameAzureRM: '$(svcConnection)'
+    commandOptions: '-var-file="s1-dev.tfvars" -lock=false -auto-approve'
