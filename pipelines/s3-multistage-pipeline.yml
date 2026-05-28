@@ -10,7 +10,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  svcConnection: 'devops-connection'
+  svcConnection: 'firstserviceconnection'
   appName: 'app-devops-assignment-s3-dev'
 
 stages:
