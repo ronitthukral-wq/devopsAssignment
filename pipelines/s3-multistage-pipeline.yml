@@ -10,7 +10,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  svcConnection: 'firstserviceconnection'
+  svcConnection: 'devops-connection'
+  backendRG: 'rg-firstresource'
+  backendStorage: 'storagergfirst13'
   appName: 'app-devops-assignment-s3-dev'
 
 stages:
@@ -35,6 +37,10 @@ stages:
         command: 'init'
         workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
         backendServiceArm: '$(svcConnection)'
+        # Added these explicitly back to satisfy the DevLabs task validator rule
+        backendAzureRmResourceGroupName: '$(backendRG)'
+        backendAzureRmStorageAccountName: '$(backendStorage)'
+        backendAzureRmContainerName: 'tfstate'
         backendAzureRmKey: 'scenario3.terraform.tfstate'
 
     - task: TerraformTaskV4@4
@@ -87,7 +93,7 @@ stages:
   dependsOn: Build_Pipeline
   jobs:
   - deployment: Deploy_App
-    environment: 'development'
+    environment: 'development'  
     strategy:
       runOnce:
         deploy:
@@ -130,6 +136,158 @@ stages:
         command: 'init'
         workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
         backendServiceArm: '$(svcConnection)'
+        # Added these here as well so the destroy sequence doesn't crash
+        backendAzureRmResourceGroupName: '$(backendRG)'
+        backendAzureRmStorageAccountName: '$(backendStorage)'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'scenario3.terraform.tfstate'
+
+    - task: TerraformTaskV4@4
+      displayName: 'TF Destroy'
+      inputs:
+        provider: 'azurerm'
+        command: 'destroy'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        environmentServiceNameAzureRM: '$(svcConnection)'
+        commandOptions: '-var-file="s3-dev.tfvars" -lock=false -auto-approve'trigger:
+  branches:
+    include:
+    - main
+  paths:
+    exclude:
+    - pipelines/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  svcConnection: 'devops-connection'
+  backendRG: 'rg-firstresource'
+  backendStorage: 'storagergfirst13'
+  appName: 'app-devops-assignment-s3-dev'
+
+stages:
+
+# ==========================================
+# STAGE 1: Infrastructure Deployment
+# ==========================================
+- stage: TF_Pipeline
+  displayName: '1. TF Pipeline Stage'
+  jobs:
+  - job: Deploy_Infra
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTaskV4@4
+      displayName: 'TF Initialize'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        backendServiceArm: '$(svcConnection)'
+        # Added these explicitly back to satisfy the DevLabs task validator rule
+        backendAzureRmResourceGroupName: '$(backendRG)'
+        backendAzureRmStorageAccountName: '$(backendStorage)'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'scenario3.terraform.tfstate'
+
+    - task: TerraformTaskV4@4
+      displayName: 'TF Apply'
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        environmentServiceNameAzureRM: '$(svcConnection)'
+        commandOptions: '-var-file="s3-dev.tfvars" -lock=false -auto-approve'
+
+# ==========================================
+# STAGE 2: Build Application Code
+# ==========================================
+- stage: Build_Pipeline
+  displayName: '2. Build Pipeline Stage'
+  dependsOn: TF_Pipeline
+  jobs:
+  - job: Compile_Code
+    steps:
+    - script: |
+        mkdir -p $(System.DefaultWorkingDirectory)/out
+        cp $(System.DefaultWorkingDirectory)/host.json $(System.DefaultWorkingDirectory)/out/ || true
+        cp $(System.DefaultWorkingDirectory)/src/package.json $(System.DefaultWorkingDirectory)/out/ || true
+        mkdir -p $(System.DefaultWorkingDirectory)/out/HttpTrigger
+        cp $(System.DefaultWorkingDirectory)/src/HttpTrigger/function.json $(System.DefaultWorkingDirectory)/out/HttpTrigger/ || true
+        cp $(System.DefaultWorkingDirectory)/src/HttpTrigger/index.js $(System.DefaultWorkingDirectory)/out/HttpTrigger/ || true
+      displayName: 'Staging Code Artifacts'
+
+    - task: ArchiveFiles@2
+      displayName: 'Zip Artifacts'
+      inputs:
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)/out'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/app.zip'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/app.zip'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+# ==========================================
+# STAGE 3: Release Application Deployment
+# ==========================================
+- stage: Release_Pipeline
+  displayName: '3. Release Pipeline Stage'
+  dependsOn: Build_Pipeline
+  jobs:
+  - deployment: Deploy_App
+    environment: 'development'  
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: DownloadBuildArtifacts@1
+            displayName: 'Download Artifacts'
+            inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'drop'
+              downloadPath: '$(System.ArtifactsDirectory)'
+
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy Function App'
+            inputs:
+              connectedServiceNameARM: '$(svcConnection)'
+              appType: 'functionAppLinux'
+              appName: '$(appName)'
+              package: '$(System.ArtifactsDirectory)/drop/app.zip'
+              runtimeStack: 'NODE|18'
+
+# ==========================================
+# STAGE 4: Destroy Infrastructure (Cleanup Step)
+# ==========================================
+- stage: Destroy_Infra
+  displayName: '4. Destroy Infrastructure'
+  dependsOn: Release_Pipeline
+  jobs:
+  - job: TF_Destroy
+    steps:
+    - task: TerraformInstaller@1
+      displayName: 'Install Terraform'
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTaskV4@4
+      displayName: 'TF Initialize for Destroy'
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+        backendServiceArm: '$(svcConnection)'
+        # Added these here as well so the destroy sequence doesn't crash
         backendAzureRmResourceGroupName: '$(backendRG)'
         backendAzureRmStorageAccountName: '$(backendStorage)'
         backendAzureRmContainerName: 'tfstate'
