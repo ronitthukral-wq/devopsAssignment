@@ -10,7 +10,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  svcConnection: 'devops-connection'
+  svcConnection: 'firstserviceconnection'
   backendRG: 'rg-firstresource'
   backendStorage: 'storagergfirst13'
   appName: 'app-devops-assignment-s3-dev'
